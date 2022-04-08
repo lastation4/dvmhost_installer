@@ -63,14 +63,8 @@ clean_environment()
   write_log_event "Cleaned install directory $INSTALL_LOC and $FW_DIR."
   sleep 1
   write_log_event "Disabling and removing the P25 Service..."
-  if [[ -f /etc/systemd/system/centrunk.service ]]
+  if [[ -f /etc/systemd/system/p25.service ]]
   then
-    systemctl stop centrunk.service
-    systemctl disable centrunk.service
-    rm -rf /etc/systemd/system/centrunk.service
-  elif [[ -f /etc/systemd/system/p25.service ]]
-  then
-    write_log_event "Found previous versions of the systemd unit file...cleaning up..."
     systemctl stop p25.service
     systemctl disable p25.service
     rm -rf /etc/systemd/system/p25.service
@@ -79,18 +73,18 @@ clean_environment()
 
 write_log_event()
 {
-  echo "[LOG]: " $(date +"%Y-%m-%d_%H-%M-%S")": $1" >> /var/log/centrunk_install.log
+  echo "[LOG]: " $(date +"%Y-%m-%d_%H-%M-%S")": $1" >> /var/log/p25_install.log
   echo $1
 }
 
 write_debug()
 {
-  echo "[DEBUG]: " $(date +"%Y-%m-%d_%H-%M-%S")": $1" >> /var/log/centrunk_install.log
+  echo "[DEBUG]: " $(date +"%Y-%m-%d_%H-%M-%S")": $1" >> /var/log/p25_install.log
 }
 
 write_stderr()
 {
-  echo "[STDERR]: " $(date +"%Y-%m-%d_%H-%M-%S")": $1" >> /var/log/centrunk_install.log
+  echo "[STDERR]: " $(date +"%Y-%m-%d_%H-%M-%S")": $1" >> /var/log/p25_install.log
 
 }
 
@@ -111,8 +105,9 @@ replace_config()
     sed -i "s/CHANNEL_NUMBER/$CHID/g" $1
     sed -i "s/VCN/$VCN/g" $1
     # this is sed'd in for "security"
-    sed -i "s/REDACTED/CENTRUNK/g" $1
-    sed -i "s/P_CENTRUNK/62030/g" $1
+    sed -i "s/REDACTED/$FNE_PASS/g" $1
+    #todo: rename in config repo
+    sed -i "s/P_CENTRUNK/$FNE_PORT/g" $1
     write_log_event "Done replacing default values in config."
 } 2>write_stderr
 
@@ -134,6 +129,8 @@ usage()
     --zt <ZEROTIER_ID>
     --chid <CHANNEL_NUMBER>
     --vcn <VOICE_CHANNEL_NUMBER>
+    --pass <FNE_PASS>
+    --port <FNE_PORT>
     --help
     [--flash <YES|NO> --flashfile <FLASHFILE>]
     ]
@@ -143,7 +140,7 @@ usage()
     "
 }
 
-echo "Welcome to the Centrunk Installer." 
+echo "Welcome to the p25 Installer." 
 echo "The options you selected are as follows: "
 write_log_event "Beginning installation..."
 
@@ -153,6 +150,16 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     --flashfile)
       FLASHFILE=$2
+      shift
+      shift
+      ;;
+    --pass)
+      FNE_PASS=$2
+      shift
+      shift
+      ;; 
+    --FNE_PORT)
+      FNE_PORT=$2
       shift
       shift
       ;; 
@@ -306,7 +313,7 @@ then
     
     First off, let's get some information..."
 
-    read -p "Is this your only hotspot that you will be connecting to Centrunk? [Y/N]: " respA
+    read -p "Is this your only hotspot that you will be connecting to p25? [Y/N]: " respA
 
     while true
     do
@@ -410,6 +417,10 @@ then
 
     read -p "Voice Channel: " VCN
 
+    read -p "FNE Password (get this from your Sysadmin): " FNE_PASS
+
+    read -p "FNE Port (get this from your Sysadmin): " FNE_PORT
+
     # prompt for channel number and voice channel number
 
     # prompt for RCON port
@@ -440,7 +451,10 @@ else
   ATG=$SUPER_GROUP
   FLASH=$FLASH
   CHANNELID=$CHID
-  VOICECHANNEL=$VCN"
+  VOICECHANNEL=$VCN
+  FNE_PASS=$FNE_PASS
+  FNE_PORT=$FNE_PORT
+  "
 fi
 
 write_log_event \
@@ -459,7 +473,9 @@ NAC=$NAC_CODE\n
 ATG=$SUPER_GROUP\n
 FLASH=$FLASH\n\n
 CHANNELID=$CHID
-VOICECHANNEL=$VCN"
+VOICECHANNEL=$VCN
+FNE_PASS=$FNE_PASS
+FNE_PORT=$FNE_PORT"
 
 read -p "Are these values correct? [Y/N]: " resp2
 
