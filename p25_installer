@@ -107,7 +107,7 @@ replace_config()
     # this is sed'd in for "security"
     sed -i "s/REDACTED/$FNE_PASS/g" $1
     #todo: rename in config repo
-    sed -i "s/P_CENTRUNK/$FNE_PORT/g" $1
+    sed -i "s/P_REDACTED/$FNE_PORT/g" $1
     write_log_event "Done replacing default values in config."
 } 2>write_stderr
 
